@@ -19,8 +19,15 @@ SENSITIVE_GROUPS = {
 def score_alert(rule_level: int, rule_groups: list, enrichment: dict) -> tuple[float, str, dict]:
     rule_component = min(55.0, (rule_level / 15.0) * 55.0)
 
-    intel_max, malicious_count = max_intel_score(enrichment)
-    intel_component = (intel_max / 100.0) * 35.0
+    intel_max, malicious_count, suspicious_count = max_intel_score(enrichment)
+    # A malicious verdict matters even when the provider's numeric score is low
+    # (e.g. VT "4/91 engines" scores ~11 but the IP is confirmed bad) — floor it.
+    effective_intel = intel_max
+    if malicious_count >= 1:
+        effective_intel = max(effective_intel, 60)
+    elif suspicious_count >= 1:
+        effective_intel = max(effective_intel, 30)
+    intel_component = (effective_intel / 100.0) * 35.0
 
     bonus = 0.0
     if malicious_count >= 2:
@@ -45,6 +52,8 @@ def score_alert(rule_level: int, rule_groups: list, enrichment: dict) -> tuple[f
         "intel_component": round(intel_component, 1),
         "context_bonus": round(bonus, 1),
         "intel_max_score": intel_max,
+        "effective_intel_score": effective_intel,
         "malicious_ioc_count": malicious_count,
+        "suspicious_ioc_count": suspicious_count,
     }
     return total, band, breakdown

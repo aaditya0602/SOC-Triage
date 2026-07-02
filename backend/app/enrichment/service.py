@@ -70,10 +70,14 @@ async def _lookup_one(db: AsyncSession, provider: IntelProvider, ioc: dict) -> d
     try:
         result = await provider.lookup(ioc["type"], ioc["value"])
     except Exception as exc:
-        log.warning("Enrichment failed provider=%s ioc=%s: %s", provider.name, ioc["value"], exc)
+        log.warning("Enrichment failed provider=%s ioc=%s: %s: %s",
+                    provider.name, ioc["value"], type(exc).__name__, exc)
         return {"provider": provider.name, "verdict": "unknown", "score": 0,
                 "summary": f"Lookup failed: {type(exc).__name__}", "details": {}, "link": "", "error": True}
     db.add(EnrichmentCache(ioc_type=ioc["type"], ioc_value=ioc["value"], provider=provider.name, result=result))
+    # Commit immediately: keeps write transactions milliseconds long, so slow
+    # rate-limited lookups (VT: 16s apart) never hold the DB lock against ingest.
+    await db.commit()
     return result
 
 
@@ -92,17 +96,19 @@ async def enrich_iocs(db: AsyncSession, iocs: list[dict]) -> dict:
             if result is not None:
                 results[provider.name] = result
         enrichment[ioc["value"]] = {"type": ioc["type"], "results": results}
-    await db.commit()
     return enrichment
 
 
-def max_intel_score(enrichment: dict) -> tuple[int, int]:
-    """Returns (max provider score 0-100, count of malicious verdicts)."""
+def max_intel_score(enrichment: dict) -> tuple[int, int, int]:
+    """Returns (max provider score 0-100, malicious verdict count, suspicious verdict count)."""
     max_score = 0
     malicious_count = 0
+    suspicious_count = 0
     for entry in enrichment.values():
         for result in entry.get("results", {}).values():
             max_score = max(max_score, result.get("score", 0))
             if result.get("verdict") == "malicious":
                 malicious_count += 1
-    return max_score, malicious_count
+            elif result.get("verdict") == "suspicious":
+                suspicious_count += 1
+    return max_score, malicious_count, suspicious_count

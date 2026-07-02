@@ -27,6 +27,13 @@ def test_intel_escalates_medium_rule():
     assert boosted > base_score + 30
 
 
+def test_malicious_verdict_floors_weak_numeric_score():
+    # VT "4/91 engines" gives score ~11 but verdict malicious — must still boost hard
+    score, band, breakdown = score_alert(10, ["authentication_failures"], enrichment_with("malicious", 11))
+    assert breakdown["effective_intel_score"] == 60
+    assert band in ("P1", "P2")
+
+
 def test_score_capped_at_100():
     score, band, _ = score_alert(15, ["malware", "ransomware"], enrichment_with("malicious", 100, count=5))
     assert score <= 100

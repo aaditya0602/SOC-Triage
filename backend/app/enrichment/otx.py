@@ -26,8 +26,10 @@ class OTXProvider(IntelProvider):
         pulses = data.get("pulse_info", {}).get("count", 0)
         pulse_names = [p.get("name", "") for p in data.get("pulse_info", {}).get("pulses", [])[:5]]
 
-        score = min(100, pulses * 12)
-        verdict = "malicious" if pulses >= 5 else "suspicious" if pulses >= 1 else "clean"
+        # Pulse counts are noisy for common infrastructure (cloud/DNS IPs land in
+        # bulk IOC dumps), so require more corroboration than other providers.
+        score = min(100, pulses * 8)
+        verdict = "malicious" if pulses >= 10 else "suspicious" if pulses >= 3 else "clean"
         return {
             "provider": self.name,
             "verdict": verdict,
