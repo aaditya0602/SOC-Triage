@@ -1,0 +1,11 @@
+<!-- Add inside <ossec_config> in /var/ossec/etc/ossec.conf on the manager.
+     Forwards every alert of level >= 7 to the triage pipeline.
+     hook_url: use host.docker.internal when Wazuh runs in Docker on the same
+     machine as the pipeline; otherwise the pipeline host's IP. -->
+<integration>
+  <name>custom-soar</name>
+  <hook_url>http://host.docker.internal:8000/api/ingest/wazuh</hook_url>
+  <api_key>wazuh-ingest-secret</api_key>
+  <level>7</level>
+  <alert_format>json</alert_format>
+</integration>

@@ -1,0 +1,47 @@
+# Full-stack SOC triage pipeline.
+# Ollama runs on the HOST (not containerized — saves RAM alongside Wazuh);
+# backend reaches it via host.docker.internal.
+#
+#   docker compose up -d --build
+#   UI: http://localhost:8080   API: http://localhost:8000
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: soc
+      POSTGRES_PASSWORD: socpass
+      POSTGRES_DB: soc
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soc"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://soc:socpass@db:5432/soc
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
