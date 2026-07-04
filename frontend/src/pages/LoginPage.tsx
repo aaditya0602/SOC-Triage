@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Loader2, ShieldHalf } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { login } from "../api";
 
 export default function LoginPage() {
@@ -24,35 +28,49 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <form onSubmit={submit} className="w-80 rounded-lg border border-edge bg-panel p-8">
-        <h1 className="mb-1 text-xl font-bold">
-          SOC<span className="text-accent">Triage</span>
-        </h1>
-        <p className="mb-6 text-sm text-ink-dim">Analyst console sign-in</p>
-        <label className="mb-1 block text-xs uppercase tracking-wide text-ink-dim">Username</label>
-        <input
-          className="mb-4 w-full rounded border border-edge bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
-        />
-        <label className="mb-1 block text-xs uppercase tracking-wide text-ink-dim">Password</label>
-        <input
-          type="password"
-          className="mb-4 w-full rounded border border-edge bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-        />
-        {error && <p className="mb-3 text-sm text-p1">{error}</p>}
-        <button
-          disabled={busy}
-          className="w-full rounded bg-accent py-2 text-sm font-semibold text-surface hover:opacity-90 disabled:opacity-50"
-        >
-          {busy ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
+      {/* Ambient background */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(600px circle at 30% 20%, oklch(0.8 0.11 215 / 7%), transparent 60%), radial-gradient(500px circle at 75% 75%, oklch(0.74 0.13 300 / 6%), transparent 60%)",
+        }}
+      />
+      <Card className="rise-in relative w-88 border-border/80">
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex size-12 items-center justify-center rounded-xl bg-primary/12">
+            <ShieldHalf className="size-6 text-primary" />
+          </div>
+          <CardTitle className="text-lg tracking-tight">
+            SOC<span className="text-primary">Triage</span>
+          </CardTitle>
+          <CardDescription>AI-assisted alert triage console</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="space-y-3.5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Username</label>
+              <Input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Password</label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                autoFocus
+              />
+            </div>
+            {error && <p className="text-sm text-p1">{error}</p>}
+            <Button type="submit" className="w-full" disabled={busy}>
+              {busy && <Loader2 className="size-4 animate-spin" />}
+              {busy ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

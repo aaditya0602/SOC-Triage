@@ -8,9 +8,14 @@ export type WSEvent = {
 };
 
 /** Subscribe to live pipeline events. Reconnects with backoff. */
-export function useAlertStream(onEvent: (e: WSEvent) => void) {
+export function useAlertStream(
+  onEvent: (e: WSEvent) => void,
+  onStatus?: (connected: boolean) => void
+) {
   const handler = useRef(onEvent);
   handler.current = onEvent;
+  const status = useRef(onStatus);
+  status.current = onStatus;
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -31,8 +36,10 @@ export function useAlertStream(onEvent: (e: WSEvent) => void) {
       };
       ws.onopen = () => {
         retry = 1000;
+        status.current?.(true);
       };
       ws.onclose = () => {
+        status.current?.(false);
         if (!closed) {
           setTimeout(connect, retry);
           retry = Math.min(retry * 2, 15000);

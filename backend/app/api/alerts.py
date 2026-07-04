@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..audit import record
 from ..auth import current_user
 from ..database import get_db
+from ..llm.service import analyze_alert
 from ..models import Alert, Incident
 from ..schemas import AlertListOut, AlertOut, TriageRequest
 from ..ws import manager
@@ -52,6 +53,25 @@ async def get_alert(alert_id: int, db: AsyncSession = Depends(get_db), user: dic
     alert = await db.get(Alert, alert_id)
     if alert is None:
         raise HTTPException(status_code=404, detail="Alert not found")
+    return AlertOut.model_validate(alert)
+
+
+@router.post("/{alert_id}/reanalyze", response_model=AlertOut)
+async def reanalyze_alert(
+    alert_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(current_user),
+):
+    """Re-run the LLM analysis — used when an alert got a mock fallback or the
+    analyst wants a second opinion after new triage context accumulated."""
+    alert = await db.get(Alert, alert_id)
+    if alert is None:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    alert.llm_analysis = await analyze_alert(db, alert)
+    await db.commit()
+    await record(db, actor=user["username"], action="alert.reanalyze", target_type="alert",
+                 target_id=alert.id, details={"provider": alert.llm_analysis.get("provider")})
+    await manager.broadcast("alert.updated", AlertOut.model_validate(alert).model_dump(mode="json"))
     return AlertOut.model_validate(alert)
 
 

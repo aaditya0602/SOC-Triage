@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { api } from "../api";
 import type { AuditEntry } from "../types";
 import { useAlertStream } from "../ws";
+import { cn } from "@/lib/utils";
 
 const ACTION_TONE: Record<string, string> = {
-  "alert.escalate": "text-p1",
-  "alert.dismiss": "text-ink-dim",
-  "alert.investigate": "text-violet-400",
-  "alert.ingested": "text-accent",
-  "auth.login": "text-emerald-400",
+  "alert.escalate": "border-p1/25 bg-p1/12 text-p1",
+  "alert.dismiss": "text-muted-foreground",
+  "alert.investigate": "border-ai/25 bg-ai/12 text-ai",
+  "alert.reopen": "border-p3/25 bg-p3/12 text-p3",
+  "alert.reanalyze": "border-ai/25 bg-ai/12 text-ai",
+  "alert.ingested": "border-primary/25 bg-primary/12 text-primary",
+  "auth.login": "border-emerald-400/25 bg-emerald-400/12 text-emerald-400",
 };
 
 export default function AuditPage() {
@@ -21,46 +29,52 @@ export default function AuditPage() {
   useAlertStream(load);
 
   return (
-    <div className="rounded-lg border border-edge bg-panel">
-      <div className="border-b border-edge px-4 py-3">
-        <h1 className="font-semibold">Audit log</h1>
-        <p className="text-xs text-ink-dim">Every ingest, login, and triage decision — immutable record</p>
-      </div>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-xs uppercase tracking-wide text-ink-dim">
-            <th className="px-4 py-2">Time</th>
-            <th className="px-4 py-2">Actor</th>
-            <th className="px-4 py-2">Action</th>
-            <th className="px-4 py-2">Target</th>
-            <th className="px-4 py-2">Details</th>
-          </tr>
-        </thead>
-        <tbody>
+    <Card className="gap-0 overflow-hidden py-0">
+      <CardHeader className="border-b py-4">
+        <CardTitle className="text-sm">Audit log</CardTitle>
+        <CardDescription className="text-xs">
+          Every ingest, login, and triage decision — immutable record
+        </CardDescription>
+      </CardHeader>
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="w-44 pl-4">Time</TableHead>
+            <TableHead className="w-28">Actor</TableHead>
+            <TableHead className="w-40">Action</TableHead>
+            <TableHead className="w-28">Target</TableHead>
+            <TableHead className="pr-4">Details</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {entries.map((e) => (
-            <tr key={e.id} className="border-t border-edge/50">
-              <td className="whitespace-nowrap px-4 py-2 font-mono text-xs text-ink-dim">
+            <TableRow key={e.id}>
+              <TableCell className="whitespace-nowrap pl-4 font-mono text-xs text-muted-foreground">
                 {new Date(e.timestamp).toLocaleString()}
-              </td>
-              <td className="px-4 py-2">{e.actor}</td>
-              <td className={`px-4 py-2 font-mono text-xs ${ACTION_TONE[e.action] ?? ""}`}>{e.action}</td>
-              <td className="px-4 py-2 font-mono text-xs">
+              </TableCell>
+              <TableCell className="text-sm">{e.actor}</TableCell>
+              <TableCell>
+                <Badge variant="outline" className={cn("font-mono text-[10px]", ACTION_TONE[e.action])}>
+                  {e.action}
+                </Badge>
+              </TableCell>
+              <TableCell className="font-mono text-xs">
                 {e.target_type} #{e.target_id}
-              </td>
-              <td className="max-w-md truncate px-4 py-2 text-xs text-ink-dim">
+              </TableCell>
+              <TableCell className="max-w-md truncate pr-4 font-mono text-[11px] text-muted-foreground">
                 {JSON.stringify(e.details)}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
           {entries.length === 0 && (
-            <tr>
-              <td colSpan={5} className="px-4 py-8 text-center text-ink-dim">
+            <TableRow>
+              <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
                 No audit entries yet
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </Card>
   );
 }

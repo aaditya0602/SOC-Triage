@@ -11,7 +11,7 @@ class OllamaProvider(LLMProvider):
         self.model = model
 
     async def complete(self, system: str, user: str) -> str:
-        async with httpx.AsyncClient(timeout=180) as client:
+        async with httpx.AsyncClient(timeout=300) as client:
             resp = await client.post(
                 f"{self.base_url}/api/chat",
                 json={
@@ -22,6 +22,7 @@ class OllamaProvider(LLMProvider):
                     ],
                     "stream": False,
                     "format": "json",
+                    "keep_alive": "30m",
                     "options": {"temperature": 0.2, "num_ctx": 4096},
                 },
             )

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from sqlalchemy import select
@@ -14,6 +15,11 @@ from .prompts import SYSTEM_PROMPT, build_user_prompt
 log = logging.getLogger(__name__)
 
 _provider: LLMProvider | None = None
+
+# Local models serve one request well but degrade badly under concurrency:
+# simultaneous pipeline tasks queue inside Ollama until they blow the HTTP
+# timeout and everything falls back to mock. Serialize instead.
+_llm_gate = asyncio.Semaphore(1)
 
 
 def get_llm() -> LLMProvider:
@@ -74,7 +80,8 @@ async def analyze_alert(db: AsyncSession, alert: Alert) -> dict:
     last_error: Exception | None = None
     for attempt in range(2):
         try:
-            raw = await provider.complete(SYSTEM_PROMPT, user_prompt)
+            async with _llm_gate:
+                raw = await provider.complete(SYSTEM_PROMPT, user_prompt)
             analysis = parse_analysis(raw)
             analysis["provider"] = provider.name
             analysis["past_verdicts_considered"] = len(past)

@@ -2,10 +2,8 @@
 
 AI-assisted SOC alert triage: ingests alerts from a **Wazuh SIEM**, enriches IOCs with
 **VirusTotal / AlienVault OTX / AbuseIPDB**, computes a deterministic **severity score**,
-correlates related alerts into **incidents**, and runs an **LLM analysis layer** (Ollama or
-Claude API) that produces plain-English summaries, MITRE ATT&CK mappings, and recommended
-response actions — all surfaced in a real-time **React analyst dashboard** with triage
-workflows and a full audit log.
+correlates related alerts into **incidents**, and runs an **LLM analysis layer** (Ollama or  
+Claude API) that produces plain-English summaries, MITRE ATT&CK mappings, and recommended response actions — all surfaced in a real-time **React analyst dashboard** with triage workflows and a full audit log.
 
 ```
 ┌─────────────────┐  webhook   ┌──────────────────────────────────────────────┐
@@ -39,12 +37,12 @@ workflows and a full audit log.
 ## Key design points
 
 - **Graceful degradation everywhere** — no intel keys → deterministic mock intel; LLM down
-  → template analysis; pipeline never blocks ingestion (runs as background task per alert).
+→ template analysis; pipeline never blocks ingestion (runs as background task per alert).
 - **Deterministic scoring + AI narrative** — severity comes from an explainable formula
-  (rule level 0-55 + worst intel verdict 0-35 + context 0-10); the LLM explains and
-  recommends, it does not decide severity. Score breakdown shown in the UI.
+(rule level 0-55 + worst intel verdict 0-35 + context 0-10); the LLM explains and
+recommends, it does not decide severity. Score breakdown shown in the UI.
 - **Analyst feedback loop** — triage notes are stored and fed into future LLM prompts for
-  the same rule, so repeated false positives get flagged as such.
+the same rule, so repeated false positives get flagged as such.
 - **Free-tier aware** — per-provider rate limiting (VT: 4 req/min) + 24 h DB cache.
 - **Audit everything** — ingest, login, every triage decision → immutable audit log.
 
@@ -70,20 +68,22 @@ python scripts/simulator.py --stream 30    # continuous demo stream
 
 ## LLM options
 
-| Provider | Setup | Notes |
-|----------|-------|-------|
-| `ollama` (default) | `ollama pull qwen2.5:3b` (or `qwen2.5:7b` — better) | free, local |
-| `anthropic` | set `ANTHROPIC_API_KEY` (pay-per-token; Haiku ≈ $0.001/alert) | best quality |
-| `mock` | nothing | template output, demo-safe |
+
+| Provider           | Setup                                                         | Notes                      |
+| ------------------ | ------------------------------------------------------------- | -------------------------- |
+| `ollama` (default) | `ollama pull qwen2.5:3b` (or `qwen2.5:7b` — better)           | free, local                |
+| `anthropic`        | set `ANTHROPIC_API_KEY` (pay-per-token; Haiku ≈ $0.001/alert) | best quality               |
+| `mock`             | nothing                                                       | template output, demo-safe |
+
 
 Set `LLM_PROVIDER` in `.env`. Anthropic API billing is separate from a Claude Pro
 subscription — Pro does not include an API key.
 
 ## Threat intel keys (all free tiers)
 
-- VirusTotal: https://www.virustotal.com/gui/join-us → `VIRUSTOTAL_API_KEY`
-- AlienVault OTX: https://otx.alienvault.com → `OTX_API_KEY`
-- AbuseIPDB: https://www.abuseipdb.com/register → `ABUSEIPDB_API_KEY`
+- VirusTotal: [https://www.virustotal.com/gui/join-us](https://www.virustotal.com/gui/join-us) → `VIRUSTOTAL_API_KEY`
+- AlienVault OTX: [https://otx.alienvault.com](https://otx.alienvault.com) → `OTX_API_KEY`
+- AbuseIPDB: [https://www.abuseipdb.com/register](https://www.abuseipdb.com/register) → `ABUSEIPDB_API_KEY`
 
 Blank keys → automatic mock mode (deterministic, demo-safe).
 
@@ -133,3 +133,4 @@ scripts/         attack-scenario simulator
 - Passwords hashed with PBKDF2-HMAC-SHA256 (200k iterations).
 - Change `JWT_SECRET`, `ANALYST_PASSWORD`, `INGEST_API_KEY` before any non-local deploy.
 - Private/loopback IPs are never sent to external intel APIs.
+
