@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { getToken } from "./api";
+import { API_BASE, getToken } from "./api";
 import type { Alert } from "./types";
 
 export type WSEvent = {
@@ -25,8 +25,10 @@ export function useAlertStream(
     function connect() {
       const token = getToken();
       if (!token || closed) return;
-      const proto = window.location.protocol === "https:" ? "wss" : "ws";
-      ws = new WebSocket(`${proto}://${window.location.host}/ws/alerts?token=${token}`);
+      const base = API_BASE
+        ? API_BASE.replace(/^http/, "ws")
+        : `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`;
+      ws = new WebSocket(`${base}/ws/alerts?token=${token}`);
       ws.onmessage = (msg) => {
         try {
           handler.current(JSON.parse(msg.data));

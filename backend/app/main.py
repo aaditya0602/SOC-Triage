@@ -1,13 +1,17 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import jwt
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from .api.alerts import router as alerts_router
 from .api.auth_router import router as auth_router
+from .api.demo import router as demo_router
 from .api.incidents import router as incidents_router
 from .api.stats import router as stats_router
 from .auth import hash_password
@@ -52,6 +56,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(demo_router)
 app.include_router(ingest_router)
 app.include_router(alerts_router)
 app.include_router(incidents_router)
@@ -61,6 +66,20 @@ app.include_router(stats_router)
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "llm_provider": settings.llm_provider}
+
+
+# Single-host deploys (Render/Railway/Fly): serve the built React app when the
+# dist folder is baked into the image. API routes above take precedence.
+_static_dir = Path(__file__).resolve().parent.parent / "static"
+if _static_dir.is_dir():
+    app.mount("/assets", StaticFiles(directory=_static_dir / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa(full_path: str):
+        candidate = _static_dir / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(_static_dir / "index.html")
 
 
 @app.websocket("/ws/alerts")

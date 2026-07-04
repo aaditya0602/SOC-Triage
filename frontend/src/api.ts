@@ -1,6 +1,9 @@
 const TOKEN_KEY = "soc_token";
 const USER_KEY = "soc_user";
 
+/** Backend origin. Empty = same origin (vite proxy in dev, single-host deploys). */
+export const API_BASE: string = import.meta.env.VITE_API_BASE ?? "";
+
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -21,7 +24,7 @@ export function clearSession() {
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
-  const resp = await fetch(path, {
+  const resp = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -42,7 +45,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 }
 
 export async function login(username: string, password: string) {
-  const resp = await fetch("/api/auth/login", {
+  const resp = await fetch(`${API_BASE}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),

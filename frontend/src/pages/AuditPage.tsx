@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { api } from "../api";
 import type { AuditEntry } from "../types";
 import { useAlertStream } from "../ws";
+import { parseUTC } from "@/lib/sev";
 import { cn } from "@/lib/utils";
 
 const ACTION_TONE: Record<string, string> = {
@@ -50,7 +51,7 @@ export default function AuditPage() {
           {entries.map((e) => (
             <TableRow key={e.id}>
               <TableCell className="whitespace-nowrap pl-4 font-mono text-xs text-muted-foreground">
-                {new Date(e.timestamp).toLocaleString()}
+                {parseUTC(e.timestamp).toLocaleString()}
               </TableCell>
               <TableCell className="text-sm">{e.actor}</TableCell>
               <TableCell>

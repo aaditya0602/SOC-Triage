@@ -52,8 +52,13 @@ export function iocVerdictCounts(alert: Alert) {
   return { malicious, suspicious };
 }
 
+/** Backend stores UTC; SQLite serializes without a tz suffix — force UTC parse. */
+export function parseUTC(iso: string): Date {
+  return new Date(/Z|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`);
+}
+
 export function timeAgo(iso: string): string {
-  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  const s = Math.max(0, (Date.now() - parseUTC(iso).getTime()) / 1000);
   if (s < 60) return `${Math.floor(s)}s ago`;
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;

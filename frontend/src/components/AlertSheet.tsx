@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/api";
 import type { Alert } from "@/types";
+import { parseUTC } from "@/lib/sev";
 import { BandBadge, StatusBadge, VerdictDot } from "./Badges";
 import AiPanel from "./AiPanel";
 import ScoreGauge from "./ScoreGauge";
@@ -212,7 +213,7 @@ export default function AlertSheet({
               <dt className="text-muted-foreground">Incident</dt>
               <dd>{alert.incident_id ? <span className="font-mono text-xs">#{alert.incident_id}</span> : "—"}</dd>
               <dt className="text-muted-foreground">Event time</dt>
-              <dd className="text-xs">{new Date(alert.event_time).toLocaleString()}</dd>
+              <dd className="text-xs">{parseUTC(alert.event_time).toLocaleString()}</dd>
             </dl>
             <pre className="mt-3 overflow-x-auto rounded-lg border bg-background p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
               {alert.full_log || "(no log line)"}
